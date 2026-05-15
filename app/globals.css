@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f9f7;
+  --foreground: #1e293b;
+  --brand-teal: #0d9488;
+  --brand-emerald: #059669;
+  --accent-amber: #f59e0b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* =====================================================
+   RECHARTS — eliminar TODOS los artefactos negros
+   (bordes, rectángulos de foco, cursores oscuros)
+   al hacer clic, hover o focus sobre los gráficos.
+===================================================== */
+
+/* 1. Quitar outline/focus de TODO lo que esté dentro del chart */
+.chart-container,
+.chart-container *,
+.chart-container *:focus,
+.chart-container *:focus-visible,
+.chart-container *:focus-within,
+.chart-container *:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 2. NUCLEAR: quitar stroke de TODOS los <rect> del chart.
+      Los colores de las barras vienen de "fill", no de "stroke",
+      así que esto no afecta el aspecto visual de los gráficos. */
+.chart-container rect,
+.chart-container rect:hover,
+.chart-container rect:focus,
+.chart-container rect:active {
+  stroke: transparent !important;
+  stroke-width: 0 !important;
+  outline: none !important;
+}
+
+/* 3. Cursor de tooltip — reemplazar el gris oscuro por tint teal */
+.chart-container .recharts-tooltip-cursor,
+.chart-container .recharts-rectangle.recharts-tooltip-cursor {
+  fill: rgba(204, 251, 241, 0.35) !important;
+  stroke: transparent !important;
+}
+
+/* 4. Sectores del pie chart al hacer clic o focus */
+.chart-container path:focus,
+.chart-container path:active,
+.chart-container .recharts-active-shape path,
+.chart-container .recharts-sector:focus {
+  outline: none !important;
+  stroke: transparent !important;
+}
+
+/* 5. SVG y wrapper — nunca mostrar borde al hacer foco */
+.chart-container svg,
+.chart-container .recharts-wrapper,
+.chart-container .recharts-surface {
+  outline: none !important;
+  border: none !important;
+}
