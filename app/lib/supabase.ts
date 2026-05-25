@@ -53,6 +53,73 @@ export type LogEntry = {
   detail: string | null // descripción del cambio aplicado
 }
 
+// ── Módulo Famosos ──────────────────────────────────────────────
+
+export type FamososBatch = {
+  id: string
+  created_at: string
+  file_name: string
+  total_input: number
+  total_output: number
+  duplicates: number
+  changes: number
+  cumpleanos: number
+  quality_before: number | null
+  quality_after: number | null
+}
+
+export type Famoso = {
+  id: string
+  created_at: string
+  batch_id: string
+  nombre: string
+  fecha_original: string
+  fecha_nacimiento: string | null  // DD-MM-YYYY
+  fecha_aprox: string | null
+  edad: number | null
+  es_cumpleanios: number           // 0 | 1
+}
+
+// ── Módulo Lugares ──────────────────────────────────────────────
+
+export type LugaresBatch = {
+  id: string
+  created_at: string
+  file_name: string
+  total_input: number
+  total_output: number
+  duplicates: number
+  changes: number
+  quality_before: number | null
+  quality_after: number | null
+}
+
+export type Lugar = {
+  id: string
+  created_at: string
+  batch_id: string
+  nombre_lugar: string
+}
+
+export type Georeferencia = {
+  id: string
+  created_at: string
+  id_lugar: string
+  latitud: number | null
+  longitud: number | null
+}
+
+export type Direccion = {
+  id: string
+  created_at: string
+  id_lugar: string
+  nombre_calle: string | null
+  numero_calle: string | null
+  ciudad_estado_provincia: string | null
+  pais: string | null
+  raw_direccion: string | null
+}
+
 // ==========================================
 // SQL PARA CREAR LAS TABLAS EN SUPABASE
 // Correr en: Dashboard → SQL Editor → New query

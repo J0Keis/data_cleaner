@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import {
   BarChart,
   Bar,
@@ -26,7 +27,16 @@ const BAR_COLORS = ['#14b8a6', '#10b981', '#f59e0b', '#8b5cf6']
 const PIE_COLORS = ['#10b981', '#f59e0b']
 
 export default function ChartsPanel({ totalInput, totalOutput, duplicates, changes }: Props) {
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
   if (totalInput === 0) return null
+  if (!mounted) return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <div className="rounded-2xl border border-teal-100 bg-white p-5 shadow-sm h-[264px]" />
+      <div className="rounded-2xl border border-teal-100 bg-white p-5 shadow-sm h-[264px]" />
+    </div>
+  )
 
   const barData = [
     { name: 'Entrada', valor: totalInput },

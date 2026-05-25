@@ -22,6 +22,7 @@ type Analytics = {
   avgQualityAfter: number
   recent: {
     fileName: string
+    module: 'Comunas' | 'Famosos' | 'Lugares'
     date: string
     input: number
     output: number
@@ -77,19 +78,20 @@ export default function ResumenPage() {
       .catch(() => { setData(null); setLoading(false) })
   }, [])
 
-  // ── Gráfico 1: calidad antes vs después (horizontal, 1 grupo por archivo) ──
+  // ── Gráfico 1: calidad antes vs después — solo archivos con score calculado ──
   const qualityData = data?.recent
+    .filter((r) => r.qualityBefore != null || r.qualityAfter != null)
     .slice()
     .reverse()
     .map((r) => ({
-      label:   r.fileName,
+      label:   `${r.fileName} · ${r.module}`,
       antes:   r.qualityBefore ?? 0,
       despues: r.qualityAfter  ?? 0,
     })) ?? []
 
   // ── Gráfico 2: entrada, únicos y duplicados (horizontal, 1 grupo por archivo) ──
   const filesData = data?.recent.map((r) => ({
-    label:      r.fileName,
+    label:      `${r.fileName} · ${r.module}`,
     entrada:    r.input,
     unicos:     r.output,
     duplicados: r.duplicates,

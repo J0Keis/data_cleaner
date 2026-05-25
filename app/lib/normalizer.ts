@@ -1,6 +1,20 @@
 import { fuzzyCorrectComuna } from './comunas-chile'
 import { isRuleEnabled } from './etl-rules'
 
+/**
+ * Normaliza una cadena para comparaciones de deduplicación:
+ * elimina diacríticos, convierte a minúsculas y colapsa espacios.
+ * Usada por famosos-parser.ts y lugares-parser.ts.
+ */
+export function normalizeForKey(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export type ChangeType = 'NORMALIZADO' | 'DUPLICADO' | 'CORREGIDO' | 'SIN_CAMBIO' | 'VACIO'
 
 export type NormalizedLine = {

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MapPinned, BarChart3, BookOpen } from 'lucide-react'
+import { MapPinned, BarChart3, BookOpen, Users, MapPin } from 'lucide-react'
 
 export default function SiteNavbar() {
   return (
@@ -16,7 +16,7 @@ export default function SiteNavbar() {
             <h1 className="text-xl font-bold tracking-tight text-slate-800 group-hover:text-teal-800">
               Data Cleaner
             </h1>
-            <p className="text-xs text-slate-500">Limpieza y normalización de listas de comunas</p>
+            <p className="text-xs text-slate-500">Limpieza y normalización de datos</p>
           </div>
         </Link>
 
@@ -25,7 +25,21 @@ export default function SiteNavbar() {
             href="/"
             className="rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-teal-100 transition hover:bg-teal-600 hover:text-white hover:ring-teal-600"
           >
-            Inicio
+            Comunas
+          </Link>
+          <Link
+            href="/famosos"
+            className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-teal-100 transition hover:bg-teal-600 hover:text-white hover:ring-teal-600"
+          >
+            <Users className="h-4 w-4" />
+            Famosos
+          </Link>
+          <Link
+            href="/lugares"
+            className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-teal-100 transition hover:bg-teal-600 hover:text-white hover:ring-teal-600"
+          >
+            <MapPin className="h-4 w-4" />
+            Lugares
           </Link>
           <Link
             href="/analytics"
