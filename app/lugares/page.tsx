@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { Toaster, toast } from 'react-hot-toast'
@@ -15,6 +15,10 @@ import { getDefaultRules } from '../lib/etl-rules'
 type Tab = 'datos' | 'log' | 'historial'
 
 export default function PaginaLugares() {
+  return <Suspense><PaginaLugaresInner /></Suspense>
+}
+
+function PaginaLugaresInner() {
   const [resultado, setResultado] = useState<LugaresResponse | null>(null)
   const [cargando, setCargando] = useState(false)
   const [tab, setTab] = useState<Tab>('datos')

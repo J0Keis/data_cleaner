@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { Toaster, toast } from 'react-hot-toast'
@@ -25,6 +25,10 @@ interface FamosoRaw {
 }
 
 export default function PaginaFamosos() {
+  return <Suspense><PaginaFamososInner /></Suspense>
+}
+
+function PaginaFamososInner() {
   const [resultado, setResultado] = useState<FamososResponse | null>(null)
   const [cargando, setCargando] = useState(false)
   const [tab, setTab] = useState<Tab>('datos')
