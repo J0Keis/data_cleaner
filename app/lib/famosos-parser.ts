@@ -42,13 +42,21 @@ function pareceFecha(s: string): boolean {
   return false
 }
 
+/** Quita BOM, espacios y comillas envolventes de un texto. */
+function limpiarTexto(s: string): string {
+  let t = s.replace(/^﻿/, '').trim()
+  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) t = t.slice(1, -1).trim()
+  return t.replace(/^["']+|["']+$/g, '').trim()
+}
+
 function detectarSeparador(linea: string): [string, string] | null {
-  const separadores = [' - ', ' | ', ' : ', ',']
+  // El TAB y el ";" se agregan para archivos exportados desde Excel.
+  const separadores = [' - ', ' | ', ' : ', '\t', ';', ',']
   for (const sep of separadores) {
     const idx = linea.indexOf(sep)
     if (idx === -1) continue
-    const nombre = linea.slice(0, idx).trim()
-    const fechaRaw = linea.slice(idx + sep.length).trim()
+    const nombre = limpiarTexto(linea.slice(0, idx))
+    const fechaRaw = limpiarTexto(linea.slice(idx + sep.length))
     if (nombre.length > 0 && pareceFecha(fechaRaw)) return [nombre, fechaRaw]
   }
   return null

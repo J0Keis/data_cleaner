@@ -184,7 +184,12 @@ export default function FamososTable({ batchId, famosos: famososProp }: FamososT
       mime = 'application/json'
       content = JSON.stringify(rows, null, 2)
     } else {
-      content = rows.map(r => `${r.nombre} — ${r.fecha_nacimiento ?? r.fecha_aprox ?? r.fecha_original}`).join('\n')
+      content = rows.map(r => {
+        const fecha  = r.fecha_nacimiento ?? r.fecha_aprox ?? r.fecha_original
+        const edad   = r.edad != null ? `${r.edad} años` : 'edad N/D'
+        const cumple = r.es_cumpleanios === 1 ? ' · 🎂 ¡cumpleaños hoy!' : ''
+        return `${r.nombre} — ${fecha} — ${edad}${cumple}`
+      }).join('\n')
       ext = 'txt'
     }
 
