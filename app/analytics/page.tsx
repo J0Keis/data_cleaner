@@ -226,10 +226,13 @@ export default function ResumenPage() {
                       />
                       <Tooltip
                         {...chartTooltipProps}
+                        // El 2º argumento del formatter es el `name` de la serie
+                        // (ya definido como "Antes"/"Después" en cada <Bar>), no el
+                        // dataKey. Se usa directamente para etiquetar cada valor.
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        formatter={(v: any, key: any) => [
+                        formatter={(v: any, name: any) => [
                           `${Number(v ?? 0)}%`,
-                          key === 'antes' ? 'Antes' : 'Después',
+                          name,
                         ]}
                       />
                       <Bar
