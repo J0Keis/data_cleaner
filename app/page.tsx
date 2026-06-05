@@ -4,9 +4,13 @@ import { useCallback, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { FileText, ArrowRight, TrendingUp } from 'lucide-react'
 import { getDefaultRules } from '@/app/lib/etl-rules'
+import type { CaseMode } from '@/app/lib/normalizer'
 import SiteNavbar from '@/app/components/SiteNavbar'
 import FileUpload, { type ProcessResult } from '@/app/components/FileUpload'
 import RulesConfig from '@/app/components/RulesConfig'
+import CaseSelector from '@/app/components/CaseSelector'
+import BuscarComuna from '@/app/components/BuscarComuna'
+import AuditPanel from '@/app/components/AuditPanel'
 import StatsPanel from '@/app/components/StatsPanel'
 import QualityGauge from '@/app/components/QualityGauge'
 import ChartsPanel from '@/app/components/ChartsPanel'
@@ -17,6 +21,7 @@ import AppVersion from '@/app/components/AppVersion'
 
 export default function Home() {
   const [rules, setRules] = useState(getDefaultRules)
+  const [caseMode, setCaseMode] = useState<CaseMode>('title')
   const [result, setResult] = useState<ProcessResult | null>(null)
   const [batchId, setBatchId] = useState<string>()
   const [refreshKey, setRefreshKey] = useState(0)
@@ -64,10 +69,12 @@ export default function Home() {
         ══════════════════════════════════════════ */}
         {!result && (
           <div className="grid gap-5 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <FileUpload rules={rules} onProcessed={handleProcessed} />
+            <div className="space-y-5 lg:col-span-2">
+              <FileUpload rules={rules} onProcessed={handleProcessed} caseMode={caseMode} />
+              <BuscarComuna caseMode={caseMode} />
             </div>
             <div className="space-y-4">
+              <CaseSelector value={caseMode} onChange={setCaseMode} />
               <RulesConfig rules={rules} onChange={setRules} />
               <BatchHistory onSelect={handleSelectBatch} selectedId={batchId} refreshKey={refreshKey} />
             </div>
@@ -94,7 +101,7 @@ export default function Home() {
                 </div>
               </div>
               {/* Botón compacto para subir otro */}
-              <FileUpload rules={rules} onProcessed={handleProcessed} compact />
+              <FileUpload rules={rules} onProcessed={handleProcessed} caseMode={caseMode} compact />
             </div>
 
             {/* ── 2. Tarjetas de estadísticas (4 columnas) ── */}
@@ -104,6 +111,9 @@ export default function Home() {
               duplicates={result.duplicates}
               changes={result.changes}
             />
+
+            {/* ── 2b. Auditoría de la ejecución (7 campos) ── */}
+            {result.auditoria && <AuditPanel auditoria={result.auditoria} />}
 
             {/* ── 3. Calidad + Reglas ETL ── */}
             <div className="grid gap-4 lg:grid-cols-3">

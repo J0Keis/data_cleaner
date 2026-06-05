@@ -15,6 +15,15 @@ interface FamosoRow {
 
 interface ImagenData { url: string | null; fuente: string | null; fecha: string | null; cached: boolean }
 
+/** Formatea el timestamp ISO de captura a "DD-MM-YYYY HH:MM" legible. */
+function formatCaptura(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso // compatibilidad con registros viejos (solo fecha)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getDate())}-${p(d.getMonth() + 1)}-${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 function ModalImagen({ famoso, onClose }: { famoso: FamosoRow; onClose: () => void }) {
   const [datos, setDatos]     = useState<ImagenData | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -60,7 +69,7 @@ function ModalImagen({ famoso, onClose }: { famoso: FamosoRow; onClose: () => vo
             <img
               src={datos.url}
               alt={famoso.nombre}
-              className="rounded-xl object-cover max-h-56 w-auto shadow-md"
+              className="rounded-xl object-contain max-h-56 w-auto shadow-md"
             />
           )}
           {!cargando && !error && !datos?.url && (
@@ -68,6 +77,19 @@ function ModalImagen({ famoso, onClose }: { famoso: FamosoRow; onClose: () => vo
               <ImageIcon className="w-12 h-12 opacity-30" />
               <p className="text-sm">No se encontró imagen en Wikipedia</p>
             </div>
+          )}
+        </div>
+
+        {/* Datos del famoso */}
+        <div className="flex flex-wrap items-center justify-center gap-2 px-5 pb-2">
+          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            Edad: {famoso.edad != null ? `${famoso.edad} años` : '—'}
+          </span>
+          {famoso.es_cumpleanios === 1 && (
+            <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-medium text-rose-700">
+              <Cake className="h-3 w-3" />
+              ¡Cumpleaños hoy!
+            </span>
           )}
         </div>
 
@@ -84,7 +106,7 @@ function ModalImagen({ famoso, onClose }: { famoso: FamosoRow; onClose: () => vo
               Wikipedia — {famoso.nombre}
             </a>
             <p className="text-[10px] text-slate-400">
-              Capturada: {datos.fecha}
+              Capturada: {formatCaptura(datos.fecha)}
               {datos.cached && ' · desde caché'}
             </p>
           </div>

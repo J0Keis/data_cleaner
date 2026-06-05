@@ -17,6 +17,19 @@ export function normalizeForKey(s: string): string {
 
 export type ChangeType = 'NORMALIZADO' | 'DUPLICADO' | 'CORREGIDO' | 'SIN_CAMBIO' | 'VACIO'
 
+/**
+ * Caso de texto elegido por el usuario para el resultado final (Parte I, criterio 3).
+ * El usuario decide entre MAYÚSCULAS, minúsculas, Formato Título o sin cambio.
+ */
+export type CaseMode = 'title' | 'upper' | 'lower' | 'none'
+
+export const CASE_OPTIONS: { value: CaseMode; label: string; ejemplo: string }[] = [
+  { value: 'title', label: 'Título',     ejemplo: 'Puerto Montt' },
+  { value: 'upper', label: 'MAYÚSCULAS', ejemplo: 'PUERTO MONTT' },
+  { value: 'lower', label: 'minúsculas', ejemplo: 'puerto montt' },
+  { value: 'none',  label: 'Sin cambio', ejemplo: 'pueRto montt' },
+]
+
 export type NormalizedLine = {
   lineNumber: number
   original: string
@@ -49,6 +62,25 @@ function titleCase(value: string): string {
     .join(' ')
 }
 
+/** Aplica el caso elegido por el usuario al valor ya normalizado. */
+function applyCase(value: string, mode: CaseMode): string {
+  switch (mode) {
+    case 'upper': return value.toUpperCase()
+    case 'lower': return value.toLowerCase()
+    case 'title': return titleCase(value)
+    default:      return value // 'none' → conserva el caso actual
+  }
+}
+
+function caseDetail(mode: CaseMode): string {
+  switch (mode) {
+    case 'upper': return 'mayúsculas'
+    case 'lower': return 'minúsculas'
+    case 'title': return 'formato título'
+    default:      return ''
+  }
+}
+
 function dedupKey(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ')
 }
@@ -69,6 +101,7 @@ function buildDetail(parts: string[]): string | null {
 function transformLine(
   original: string,
   rules: Record<string, boolean>,
+  caseMode: CaseMode,
   fuzzyCache: Map<string, { corrected: string; matched: boolean }>,
 ): { normalized: string; details: string[]; fuzzyApplied: boolean } {
   let value = original
@@ -96,26 +129,30 @@ function transformLine(
     value = noAccents
   }
 
-  if (isRuleEnabled('titleCase', rules)) {
-    const titled = titleCase(value)
-    if (titled !== value) details.push('capitalización normalizada')
-    value = titled
-  }
-
   let fuzzyApplied = false
   if (isRuleEnabled('fuzzyCorrect', rules)) {
-    // Consultar cache antes de correr Levenshtein
-    let result = fuzzyCache.get(value)
+    // Fuzzy compara contra la lista de referencia en Title Case (forma canónica).
+    // Solo sobrescribe el valor si hubo una corrección real, para que el caso
+    // "sin cambio" preserve el texto original.
+    const canonical = titleCase(value)
+    let result = fuzzyCache.get(canonical)
     if (result === undefined) {
-      result = fuzzyCorrectComuna(value)
-      fuzzyCache.set(value, result)
+      result = fuzzyCorrectComuna(canonical)
+      fuzzyCache.set(canonical, result)
     }
-
     if (result.matched) {
       details.push('corrección ortográfica (coincidencia con lista de referencia)')
       fuzzyApplied = true
+      value = result.corrected
     }
-    value = result.corrected
+  }
+
+  // Caso final elegido por el usuario (MAYÚSCULAS / minúsculas / Título / sin cambio)
+  const preCase = value
+  value = applyCase(value, caseMode)
+  if (value !== preCase) {
+    const etiqueta = caseDetail(caseMode)
+    if (etiqueta) details.push(etiqueta)
   }
 
   return { normalized: value, details, fuzzyApplied }
@@ -124,6 +161,7 @@ function transformLine(
 export function normalizeLines(
   lines: string[],
   rules: Record<string, boolean>,
+  caseMode: CaseMode = 'title',
 ): NormalizedLine[] {
   const results: NormalizedLine[] = []
   const seen = new Map<string, number>()
@@ -136,7 +174,7 @@ export function normalizeLines(
     const lineNumber = index + 1
     const original   = lines[index]
 
-    const { normalized, details, fuzzyApplied } = transformLine(original, rules, fuzzyCache)
+    const { normalized, details, fuzzyApplied } = transformLine(original, rules, caseMode, fuzzyCache)
 
     if (normalized.length === 0 && isRuleEnabled('removeEmpty', rules)) {
       results.push({

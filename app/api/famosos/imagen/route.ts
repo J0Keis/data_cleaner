@@ -61,7 +61,8 @@ export async function GET(request: Request) {
     const fuente = imageUrl
       ? `Wikipedia — https://en.wikipedia.org/wiki/${encodeURIComponent(nombre)}`
       : null
-    const fecha = new Date().toISOString().split('T')[0]
+    // Timestamp completo (fecha + hora) de cuándo la app recuperó el dato de la API
+    const fecha = new Date().toISOString()
 
     // 3. Guardar en caché (columnas opcionales, falla silenciosa si no existen)
     if (imageUrl) {

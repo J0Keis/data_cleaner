@@ -1,0 +1,12 @@
+Machu Picchu;Cusco, Perú;-13.1631, -72.5450
+Torre Eiffel;Champ de Mars, París, Francia;48.8584, 2.2945
+Gran Muralla China;Huairou, Pekín, China;40.4319, 116.5704
+Coliseo Romano;Piazza del Colosseo, Roma, Italia;41.8902, 12.4922
+Estatua de la Libertad;Liberty Island, Nueva York, EE.UU.;40.6892, -74.0445
+Cristo Redentor;Corcovado, Río de Janeiro, Brasil;-22.9519, -43.2105
+Palacio de La Moneda;Santiago, Chile;-33.4429, -70.6536
+Ópera de Sídney;Bennelong Point, Sídney, Australia;-33.8568, 151.2153
+Moái Rapa Nui;Isla de Pascua, Chile;-27.1212, -109.3666
+Pirámides de Guiza;Guiza, Egipto;29.9792, 31.1342
+Taj Mahal;Agra, India;27.1751, 78.0421
+Gran Muralla China;Huairou, Pekín, China;40.4319, 116.5704

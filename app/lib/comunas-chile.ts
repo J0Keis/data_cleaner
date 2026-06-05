@@ -166,3 +166,37 @@ export function fuzzyCorrectComuna(value: string): { corrected: string; matched:
 
   return { corrected: value, matched: false }
 }
+
+/**
+ * Sugiere comunas por similitud para el buscador individual (Parte I, criterio 7).
+ * Combina coincidencia por prefijo, subcadena y distancia Levenshtein.
+ * Ej: "florida" → ["Florida", "La Florida"]; "temuko" → ["Temuco"].
+ */
+export function sugerirComunas(query: string, limit = 6): string[] {
+  const q = query
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!q) return []
+
+  const scored: { display: string; score: number }[] = []
+
+  for (const entry of normalizedIndex) {
+    const key = entry.key
+    let score: number
+    if (key === q)              score = 0          // coincidencia exacta
+    else if (key.startsWith(q)) score = 1          // empieza con la consulta
+    else if (key.includes(q))   score = 2          // contiene la consulta
+    else {
+      const d = levenshtein(q, key, 3)             // typo cercano
+      if (d <= 3) score = 3 + d
+      else continue
+    }
+    scored.push({ display: entry.display, score })
+  }
+
+  scored.sort((a, b) => a.score - b.score || a.display.localeCompare(b.display, 'es'))
+  return scored.slice(0, limit).map((s) => s.display)
+}

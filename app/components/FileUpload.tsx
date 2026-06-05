@@ -4,6 +4,8 @@ import { useCallback, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { Upload, FileText, Loader2, CheckCircle2 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import type { CaseMode } from '@/app/lib/normalizer'
+import type { Auditoria } from './AuditPanel'
 
 export type ProcessResult = {
   batchId: string
@@ -15,16 +17,19 @@ export type ProcessResult = {
   qualityBefore: number
   qualityAfter: number
   comunas: { original: string; normalized: string; region?: string | null; habitantes?: number | null }[]
+  auditoria?: Auditoria
 }
 
 type Props = {
   rules: Record<string, boolean>
   onProcessed: (result: ProcessResult) => void
+  /** Caso de texto elegido por el usuario (MAYÚS/minús/Título/sin cambio) */
+  caseMode?: CaseMode
   /** Si se pasa, muestra una franja compacta en lugar del hero */
   compact?: boolean
 }
 
-export default function FileUpload({ rules, onProcessed, compact = false }: Props) {
+export default function FileUpload({ rules, onProcessed, caseMode = 'title', compact = false }: Props) {
   const [loading, setLoading] = useState(false)
 
   const onDrop = useCallback(
@@ -45,6 +50,7 @@ export default function FileUpload({ rules, onProcessed, compact = false }: Prop
         const formData = new FormData()
         formData.append('file', file)
         formData.append('rules', JSON.stringify(rules))
+        formData.append('caseMode', caseMode)
 
         const res = await fetch('/api/process', { method: 'POST', body: formData })
         const data = await res.json()
@@ -59,7 +65,7 @@ export default function FileUpload({ rules, onProcessed, compact = false }: Prop
         setLoading(false)
       }
     },
-    [rules, onProcessed],
+    [rules, onProcessed, caseMode],
   )
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

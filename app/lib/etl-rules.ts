@@ -43,13 +43,10 @@ export const ETL_RULES: EtlRule[] = [
     required: false,
     defaultEnabled: true,
   },
-  {
-    id: 'titleCase',
-    label: 'Formato Title Case',
-    description: 'Capitaliza la primera letra de cada palabra (ej: "SANTIAGO" → "Santiago", "teMuco" → "Temuco")',
-    required: false,
-    defaultEnabled: true,
-  },
+  // Nota: el formato de caso (MAYÚSCULAS / minúsculas / Título) ya no es una regla
+  // on/off: ahora lo elige el usuario con el selector de caso (ver CaseMode en
+  // normalizer.ts y el componente CaseSelector). Esto cumple el criterio de la
+  // rúbrica "unificación a elección del usuario".
   {
     id: 'deduplicate',
     label: 'Eliminar duplicados',
