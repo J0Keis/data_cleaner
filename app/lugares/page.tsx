@@ -234,7 +234,7 @@ function PaginaLugaresInner() {
                           }))}
                       />
                     )}
-                    {tab === 'log' && <LogLugares logs={resultado.logs} />}
+                    {tab === 'log' && <LogLugares logs={resultado.logs.length ? resultado.logs : derivarLogLugares(lugaresData)} />}
                   </div>
                 </div>
               </>
@@ -269,6 +269,16 @@ function PaginaLugaresInner() {
       </main>
     </div>
   )
+}
+
+/** Deriva un log legible desde los lugares ya guardados, para que la pestaña
+ *  "Log de proceso" no quede vacía al cargar un batch del historial (P2). */
+function derivarLogLugares(lugares: LugarRow[]): string[] {
+  return lugares.map((l, i) => {
+    const dir    = [l.direccion?.ciudad_estado_provincia, l.direccion?.pais].filter(Boolean).join(', ')
+    const coords = l.georef ? ` (${l.georef.latitud}, ${l.georef.longitud})` : ''
+    return `Línea ${i + 1}: ${l.nombre} — ${dir || 's/dirección'}${coords}`
+  })
 }
 
 function LogLugares({ logs }: { logs: string[] }) {

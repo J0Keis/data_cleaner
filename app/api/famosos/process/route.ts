@@ -17,9 +17,6 @@ function applyTextRules(text: string, rules: Record<string, boolean>): string {
   if (rules['removeAccents']) {
     result = result.normalize('NFD').replace(/[̀-ͯ]/g, '')
   }
-  if (rules['titleCase']) {
-    result = result.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-  }
   return result
 }
 
@@ -86,7 +83,10 @@ export async function POST(request: Request) {
       const famososRows = resultado.famosos.map(f => ({
         id: randomUUID(),
         batch_id: batchId,
-        nombre: applyTextRules(f.nombre, rules),
+        // Conservar tildes en el nombre (P1): la rúbrica solo pide agregar el
+        // nombre, y quitarlas rompe el display y la búsqueda de imagen en
+        // Wikipedia. El dedup del parser ya usó normalizeForKey, así que es seguro.
+        nombre: f.nombre.trim().replace(/\s+/g, ' '),
         fecha_original: f.fechaOriginal,
         fecha_nacimiento: f.fechaNormalizada,
         fecha_aprox: f.fechaAprox,

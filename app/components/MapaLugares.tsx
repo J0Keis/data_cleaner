@@ -44,8 +44,15 @@ export default function MapaLugares({ lugares }: Props) {
     if (!containerRef.current || mapInstRef.current) return
 
     const markerStore = markersRef.current
+    // Evita la doble inicialización en dev (StrictMode monta→desmonta→monta y
+    // Fast Refresh): como import('leaflet') es asíncrono, sin este flag dos
+    // callbacks pueden llamar L.map() sobre el mismo contenedor.
+    let cancelled = false
 
     import('leaflet').then((L) => {
+      const container = containerRef.current
+      // Si el efecto ya se limpió o ya hay un mapa, no inicializar otro.
+      if (cancelled || mapInstRef.current || !container) return
       leafletRef.current = L
       // Fix icono por defecto de Leaflet con webpack/Next.js
       delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
@@ -55,7 +62,7 @@ export default function MapaLugares({ lugares }: Props) {
         shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
       })
 
-      const map = L.map(containerRef.current!, {
+      const map = L.map(container, {
         center:              [20, 10],
         zoom:                3,
         minZoom:             2,          // no permite alejarse más que el mundo completo
@@ -85,6 +92,7 @@ export default function MapaLugares({ lugares }: Props) {
     })
 
     return () => {
+      cancelled = true
       mapInstRef.current?.remove()
       mapInstRef.current = null
       markerStore.clear()

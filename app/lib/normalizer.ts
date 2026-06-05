@@ -1,4 +1,4 @@
-import { fuzzyCorrectComuna } from './comunas-chile'
+import { fuzzyCorrectComuna, type CorrectorComunas } from './comunas-chile'
 import { isRuleEnabled } from './etl-rules'
 
 /**
@@ -103,6 +103,7 @@ function transformLine(
   rules: Record<string, boolean>,
   caseMode: CaseMode,
   fuzzyCache: Map<string, { corrected: string; matched: boolean }>,
+  corrector: CorrectorComunas,
 ): { normalized: string; details: string[]; fuzzyApplied: boolean } {
   let value = original
   const details: string[] = []
@@ -137,7 +138,7 @@ function transformLine(
     const canonical = titleCase(value)
     let result = fuzzyCache.get(canonical)
     if (result === undefined) {
-      result = fuzzyCorrectComuna(canonical)
+      result = corrector(canonical)
       fuzzyCache.set(canonical, result)
     }
     if (result.matched) {
@@ -162,6 +163,7 @@ export function normalizeLines(
   lines: string[],
   rules: Record<string, boolean>,
   caseMode: CaseMode = 'title',
+  corrector: CorrectorComunas = fuzzyCorrectComuna,
 ): NormalizedLine[] {
   const results: NormalizedLine[] = []
   const seen = new Map<string, number>()
@@ -174,7 +176,7 @@ export function normalizeLines(
     const lineNumber = index + 1
     const original   = lines[index]
 
-    const { normalized, details, fuzzyApplied } = transformLine(original, rules, caseMode, fuzzyCache)
+    const { normalized, details, fuzzyApplied } = transformLine(original, rules, caseMode, fuzzyCache, corrector)
 
     if (normalized.length === 0 && isRuleEnabled('removeEmpty', rules)) {
       results.push({

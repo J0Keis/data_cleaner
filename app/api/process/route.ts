@@ -5,6 +5,7 @@ import { getUniqueComunas, normalizeLines, normalizeForKey, type CaseMode } from
 import { parseFileContent } from '@/app/lib/parser'
 import { calculateQualityScore } from '@/app/lib/quality-score'
 import { crearEnriquecedorLote } from '@/app/lib/comunas-api'
+import { crearCorrectorComunas, COMUNAS_REFERENCIA } from '@/app/lib/comunas-chile'
 import { supabase } from '@/app/lib/supabase'
 
 // Tamaño máximo de cada chunk al insertar en Supabase.
@@ -56,10 +57,20 @@ export async function POST(request: Request) {
     const rules    = rulesRaw ? JSON.parse(rulesRaw) : getDefaultRules()
     const caseMode = (caseModeRaw as CaseMode | null) ?? 'title'
 
-    // ── 2. ETL ───────────────────────────────────────────────────
+    // ── 2. API: lista COMPLETA de comunas (corrector) + enriquecedor ─
+    // Una sola llamada a chileabierto.cl. La lista de comunas de la API alimenta
+    // el corrector ortográfico (corrige typos contra TODAS las comunas de Chile)
+    // y el enriquecedor agrega región/población. Si la API falla, se usa la
+    // lista/dataset local como respaldo.
+    const { apiDisponible, enriquecer, nombres } = await crearEnriquecedorLote()
+    const corrector = crearCorrectorComunas(
+      nombres.length ? [...nombres, ...COMUNAS_REFERENCIA] : COMUNAS_REFERENCIA,
+    )
+
+    // ── 3. ETL ───────────────────────────────────────────────────
     // normalizeLines usa un cache fuzzy interno → O(únicas) en vez de O(total)
     const qualityBefore = calculateQualityScore(lines)
-    const normalized    = normalizeLines(lines, rules, caseMode)
+    const normalized    = normalizeLines(lines, rules, caseMode, corrector)
     const unique        = getUniqueComunas(normalized)
     const qualityAfter  = calculateQualityScore(unique.map((c) => c.normalized))
 
@@ -69,10 +80,7 @@ export async function POST(request: Request) {
       (l) => l.isUnique && l.changeType !== 'SIN_CAMBIO' && l.changeType !== 'VACIO',
     ).length
 
-    // ── 3. Enriquecimiento con API REAL + fallback local ─────────
-    // Una sola llamada HTTP por lote (chileabierto.cl); cae al dataset local
-    // si la API no responde, y marca 'no_encontrado' lo que no está en ninguna.
-    const { apiDisponible, enriquecer } = await crearEnriquecedorLote()
+    // ── 4. Enriquecimiento región/población (API → local → no_encontrado) ─
     let noEncontradas = 0
     const comunasEnriquecidas = unique.map((c) => {
       const info = enriquecer(c.normalized)

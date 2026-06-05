@@ -52,6 +52,17 @@ export default function Home() {
         qualityBefore: batch.quality_before ?? 0,
         qualityAfter: batch.quality_after ?? 0,
         comunas,
+        // Auditoría reconstruida desde el batch guardado (P3): así el AuditPanel
+        // también se muestra al cargar un batch del historial. null → 0.
+        auditoria: {
+          fechaHora:     batch.created_at,
+          leidos:        batch.total_input ?? 0,
+          procesadas:    (batch.total_output ?? 0) + (batch.duplicates ?? 0),
+          duplicados:    batch.duplicates ?? 0,
+          consolidados:  batch.consolidados ?? batch.total_output ?? 0,
+          noEncontrados: batch.no_encontrados ?? 0,
+          errores:       batch.errores ?? 0,
+        },
       })
     }
   }, [])

@@ -352,6 +352,15 @@ export const COMUNAS_DATA: Record<string, ComunaInfo> = {
   'yumbel':                 { region: 'Biobío', habitantes: 22005 },
   'yungay':                 { region: 'Ñuble', habitantes: 21085 },
   'zapallar':               { region: 'Valparaíso', habitantes: 8350 },
+  // Comunas que faltaban frente a la API oficial (respaldo offline completo).
+  'antartica':              { region: 'Magallanes y de la Antártica Chilena', habitantes: 200 },
+  'calera':                 { region: 'Valparaíso', habitantes: 55000 },
+  'chile chico':            { region: 'Aysén del Gral. Carlos Ibáñez del Campo', habitantes: 5000 },
+  'navidad':                { region: "Libertador Gral. Bernardo O'Higgins", habitantes: 7050 },
+  "o'higgins":              { region: 'Aysén del Gral. Carlos Ibáñez del Campo', habitantes: 500 },
+  'paiguano':               { region: 'Coquimbo', habitantes: 4500 },
+  'san felipe':             { region: 'Valparaíso', habitantes: 78000 },
+  'til til':                { region: 'Metropolitana de Santiago', habitantes: 18000 },
 }
 
 /** Busca región y habitantes de una comuna normalizada. */

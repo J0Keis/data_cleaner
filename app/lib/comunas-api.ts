@@ -3,7 +3,8 @@
  * Enriquecimiento de comunas con una API REST pública REAL + fallback local.
  *
  * API primaria: https://chileabierto.cl/api/v1/comunas
- *   - REST público, sin autenticación. 349 comunas.
+ *   - REST público, sin autenticación. Chile tiene 346 comunas oficiales;
+ *     esta API devuelve 349 entradas (incluye divisiones extra como Antártica).
  *   - Por comuna devuelve: name, region_name, province_name, lat, lng, population.
  *   - Fuente de datos atribuida al INE.
  *
@@ -67,6 +68,9 @@ export interface EnriquecedorLote {
   apiDisponible: boolean
   /** Resuelve una comuna ya normalizada contra API → local → no_encontrado. */
   enriquecer: (nombreNormalizado: string) => EnriquecimientoComuna
+  /** Nombres oficiales de TODAS las comunas de la API (vacío si la API falló).
+   *  Se usa para construir el corrector ortográfico con la lista completa. */
+  nombres: string[]
 }
 
 /**
@@ -94,7 +98,8 @@ export async function crearEnriquecedorLote(): Promise<EnriquecedorLote> {
     return { region: null, habitantes: null, fuente: 'no_encontrado' }
   }
 
-  return { apiDisponible: apiIndex !== null, enriquecer }
+  const nombres = apiIndex ? Array.from(apiIndex.values(), (c) => c.name) : []
+  return { apiDisponible: apiIndex !== null, enriquecer, nombres }
 }
 
 /** Enriquece una sola comuna (usado por el buscador individual de comunas). */

@@ -104,6 +104,10 @@ export function detectarSeparadorCSV(lineas: string[]): string {
 }
 
 export function fixEncoding(text: string): string {
+  // El segundo replace elimina caracteres de control C1 (U+0080–U+009F): bytes
+  // de mojibake invisibles. OJO: NO borra guiones — el "-" dentro de los
+  // corchetes es el operador de rango (de U+0080 a U+009F), no un guion literal.
+  // Por eso las coordenadas con signo negativo (ej. -13.16, -72.54) se conservan.
   return text
     .replace(/�/g, '?')
     .replace(/[-]/g, '')

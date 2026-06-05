@@ -17,9 +17,6 @@ function applyTextRules(text: string, rules: Record<string, boolean>): string {
   if (rules['removeAccents']) {
     result = result.normalize('NFD').replace(/[̀-ͯ]/g, '')
   }
-  if (rules['titleCase']) {
-    result = result.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
-  }
   return result
 }
 
@@ -86,7 +83,9 @@ export async function POST(request: Request) {
     const lugaresConId = resultado.lugares.map(lugar => ({
       ...lugar,
       lugarId: randomUUID(),
-      nombreNorm: applyTextRules(lugar.nombre, rules),
+      // Conservar tildes en el nombre del lugar (P1, cosmético): el dedup ya
+      // ocurrió en el parser; aquí solo se recorta y colapsan espacios.
+      nombreNorm: lugar.nombre.trim().replace(/\s+/g, ' '),
     }))
 
     // Batch insert 1: lugares

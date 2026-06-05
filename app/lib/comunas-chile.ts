@@ -61,23 +61,31 @@ export const COMUNAS_REFERENCIA: string[] = [
   'Trehuaco', 'Tucapel', 'Valdivia', 'Vallenar', 'Valparaiso', 'Vichuquen',
   'Victoria', 'Vicuna', 'Vilcun', 'Villa Alegre', 'Villa Alemana', 'Villarrica',
   'Vina Del Mar', 'Vitacura', 'Yerbas Buenas', 'Yumbel', 'Yungay', 'Zapallar',
+  // Comunas que estaban en la API oficial pero faltaban aquí (respaldo offline
+  // y buscador). En línea, la lista se completa dinámicamente desde la API.
+  'Antartica', 'Calera', 'Chile Chico', 'Navidad', "O'Higgins", 'Paiguano',
+  'San Felipe', 'Til Til',
 ]
 
-// Índice pre-computado: key lowercase, compact sin espacios, y display original
+// Índice pre-computado (solo para el buscador `sugerirComunas`): key lowercase,
+// compact sin espacios, y display original.
 const normalizedIndex = COMUNAS_REFERENCIA.map((name) => ({
   display:  name,
   key:      name.toLowerCase(),
   compact:  name.toLowerCase().replace(/\s+/g, ''),
 }))
 
-// Lookup O(1) para coincidencia exacta (caso más frecuente con datos ya normalizados)
-const exactLookup = new Map<string, string>(
-  normalizedIndex.map((e) => [e.key, e.display])
-)
-
 /**
- * Levenshtein con terminación temprana: si la distancia mínima posible de la
- * fila actual ya supera `maxDist`, se aborta en O(1) en lugar de continuar O(m×n).
+ * Distancia de edición Damerau-Levenshtein (variante OSA) con terminación
+ * temprana. A diferencia de Levenshtein puro, una transposición de caracteres
+ * ADYACENTES cuenta como UNA sola edición. Esto es clave porque el typo más
+ * común al teclear es justamente intercambiar dos letras seguidas:
+ *   "Arauoc"→"Arauco", "Victorai"→"Victoria", "cuirco"→"Curico"
+ * (Levenshtein los considera distancia 2 y se escapaban del umbral; con OSA
+ * son distancia 1 y se corrigen.)
+ *
+ * Si la distancia mínima posible de la fila ya supera `maxDist`, aborta antes.
+ * Se conserva el nombre `levenshtein` por compatibilidad con los llamadores.
  */
 export function levenshtein(a: string, b: string, maxDist = Infinity): number {
   const m = a.length
@@ -85,86 +93,168 @@ export function levenshtein(a: string, b: string, maxDist = Infinity): number {
 
   // Diferencia de longitud ya supera el umbral → imposible estar dentro del límite
   if (Math.abs(m - n) > maxDist) return maxDist + 1
+  if (m === 0) return n
+  if (n === 0) return m
 
-  const dp: number[] = Array.from({ length: n + 1 }, (_, i) => i)
+  // Tres filas rotativas: i-2 (para transposición), i-1 y la actual.
+  let prevPrev: number[] = new Array(n + 1).fill(0)
+  let prev:     number[] = Array.from({ length: n + 1 }, (_, j) => j)
+  let curr:     number[] = new Array(n + 1).fill(0)
 
   for (let i = 1; i <= m; i++) {
-    let prev = dp[0]
-    dp[0] = i
-    let rowMin = i // mínimo valor de la fila actual (para terminación temprana)
+    curr[0] = i
+    let rowMin = i // mínimo de la fila actual (para terminación temprana)
 
     for (let j = 1; j <= n; j++) {
-      const temp = dp[j]
       const cost = a[i - 1] === b[j - 1] ? 0 : 1
-      dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost)
-      prev = temp
-      if (dp[j] < rowMin) rowMin = dp[j]
+      let v = Math.min(
+        prev[j] + 1,         // deleción
+        curr[j - 1] + 1,     // inserción
+        prev[j - 1] + cost,  // sustitución
+      )
+      // Transposición de caracteres adyacentes (Damerau-OSA)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        v = Math.min(v, prevPrev[j - 2] + 1)
+      }
+      curr[j] = v
+      if (v < rowMin) rowMin = v
     }
 
-    // Si el menor valor de la fila ya supera maxDist, no puede mejorar
     if (rowMin > maxDist) return maxDist + 1
+
+    // Rotar filas: prevPrev ← prev ← curr ← (buffer reutilizado)
+    const tmp = prevPrev
+    prevPrev = prev
+    prev = curr
+    curr = tmp
   }
-  return dp[n]
+
+  return prev[n]
 }
 
 /**
- * Corrige una comuna usando coincidencia exacta (O(1)) primero,
- * luego Levenshtein con pre-filtros de longitud y terminación temprana.
- *
- * Nota: esta función es pura. El cache de resultados se gestiona en
- * normalizer.ts para evitar estado global entre requests.
+ * Alias de comunas: nombres comunes o grafías alternativas → nombre oficial.
+ * Clave en forma normalizada (minúsculas, sin tildes). Se usa cuando el nombre
+ * popular difiere del oficial de la API (ej. la gente escribe "La Calera" pero
+ * la comuna oficial es "Calera").
  */
+const ALIAS_COMUNAS: Record<string, string> = {
+  'la calera':                 'Calera',
+  'san francisco de mostazal': 'Mostazal',
+  // Grafías alternativas de una misma comuna → nombre oficial de la API
+  // (evita que aparezcan dos filas para la misma comuna).
+  'tiltil':                    'Til Til',
+  'llay llay':                 'Llaillay',
+  'llay-llay':                 'Llaillay',
+  'paihuano':                  'Paiguano',
+  'o higgins':                 "O'Higgins",
+}
+
+/** Clave de comparación: sin tildes, minúsculas, espacios colapsados. */
+function claveComuna(s: string): string {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+/** Forma de salida: sin tildes y con Cada Palabra Capitalizada. */
+function aDisplay(name: string): string {
+  return name
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
+    .join(' ')
+    .trim()
+}
+
+export type CorrectorComunas = (value: string) => { corrected: string; matched: boolean }
+
+/**
+ * Construye un corrector ortográfico a partir de CUALQUIER lista de comunas
+ * (la de la API en línea, o la local como respaldo). Usa coincidencia exacta
+ * O(1) primero y luego Damerau-Levenshtein con pre-filtros de longitud.
+ * Es puro: cada request crea el suyo, sin estado global compartido.
+ */
+export function crearCorrectorComunas(nombres: string[]): CorrectorComunas {
+  const index: { display: string; key: string; compact: string }[] = []
+  const exact = new Map<string, string>()
+
+  const agregar = (display: string, key: string) => {
+    if (!key || exact.has(key)) return // el primero gana (la API tiene prioridad)
+    exact.set(key, display)
+    index.push({ display, key, compact: key.replace(/\s+/g, '') })
+  }
+
+  for (const name of nombres) agregar(aDisplay(name), claveComuna(name))
+
+  // Aliases con prioridad: unifican grafías alternativas al nombre canónico,
+  // sobrescribiendo cualquier entrada previa con esa misma clave.
+  for (const [alias, canonical] of Object.entries(ALIAS_COMUNAS)) {
+    const k = claveComuna(alias)
+    const disp = aDisplay(canonical)
+    exact.set(k, disp)
+    const existente = index.find((e) => e.key === k)
+    if (existente) existente.display = disp
+    else index.push({ display: disp, key: k, compact: k.replace(/\s+/g, '') })
+  }
+
+  return (value: string): { corrected: string; matched: boolean } => {
+    const key = claveComuna(value)
+
+    // 1. Coincidencia exacta O(1)
+    const exactDisplay = exact.get(key)
+    if (exactDisplay !== undefined) {
+      return { corrected: exactDisplay, matched: exactDisplay !== value }
+    }
+
+    const compact   = key.replace(/\s+/g, '')
+    const threshold = Math.min(2, Math.floor(Math.max(key.length, 1) * 0.2))
+    let best: { display: string; distance: number } | null = null
+
+    for (const entry of index) {
+      // Pre-filtro de longitud
+      if (Math.abs(key.length - entry.key.length) > threshold) {
+        if (Math.abs(compact.length - entry.compact.length) > threshold) continue
+        const d2 = levenshtein(compact, entry.compact, threshold)
+        if (d2 <= threshold && (!best || d2 < best.distance)) {
+          best = { display: entry.display, distance: d2 }
+          if (d2 === 0) break
+        }
+        continue
+      }
+
+      const d1 = levenshtein(key, entry.key, threshold)
+      if (d1 <= threshold) {
+        if (!best || d1 < best.distance) {
+          best = { display: entry.display, distance: d1 }
+          if (d1 === 0) break
+        }
+        continue
+      }
+
+      // Compact maneja diferencias de espaciado ("l acalera" → "La Calera")
+      if (Math.abs(compact.length - entry.compact.length) <= threshold) {
+        const d2 = levenshtein(compact, entry.compact, threshold)
+        if (d2 <= threshold && (!best || d2 < best.distance)) {
+          best = { display: entry.display, distance: d2 }
+        }
+      }
+    }
+
+    if (best && best.display !== value) return { corrected: best.display, matched: true }
+    return { corrected: value, matched: false }
+  }
+}
+
+/**
+ * Corrector por defecto, construido con la lista local de referencia. Sirve de
+ * respaldo (API caída) y para usos sueltos. La ruta /api/process construye uno
+ * con la lista completa de la API mediante `crearCorrectorComunas`.
+ * Es puro respecto al estado entre requests; el cache se gestiona en normalizer.ts.
+ */
+const correctorPorDefecto = crearCorrectorComunas(COMUNAS_REFERENCIA)
+
 export function fuzzyCorrectComuna(value: string): { corrected: string; matched: boolean } {
-  const key = value.toLowerCase()
-
-  // 1. Coincidencia exacta: O(1), cubre la mayoría de datos ya limpios
-  const exactDisplay = exactLookup.get(key)
-  if (exactDisplay !== undefined) {
-    return { corrected: exactDisplay, matched: exactDisplay !== value }
-  }
-
-  const compact   = key.replace(/\s+/g, '')
-  const threshold = Math.min(2, Math.floor(Math.max(key.length, 1) * 0.2))
-
-  let best: { display: string; distance: number } | null = null
-
-  for (const entry of normalizedIndex) {
-    // Pre-filtro de longitud: descarta entradas que no pueden estar dentro del umbral
-    if (Math.abs(key.length - entry.key.length) > threshold) {
-      // Intenta igualmente con compact (sin espacios puede tener distinta longitud)
-      if (Math.abs(compact.length - entry.compact.length) > threshold) continue
-      const d2 = levenshtein(compact, entry.compact, threshold)
-      if (d2 <= threshold && (!best || d2 < best.distance)) {
-        best = { display: entry.display, distance: d2 }
-        if (d2 === 0) break
-      }
-      continue
-    }
-
-    // Comparación con key completo (con espacios)
-    const d1 = levenshtein(key, entry.key, threshold)
-    if (d1 <= threshold) {
-      if (!best || d1 < best.distance) {
-        best = { display: entry.display, distance: d1 }
-        if (d1 === 0) break // distancia 0 → coincidencia perfecta, no puede mejorar
-      }
-      continue
-    }
-
-    // Si key no coincide, intenta compact (maneja diferencias de espaciado)
-    if (Math.abs(compact.length - entry.compact.length) <= threshold) {
-      const d2 = levenshtein(compact, entry.compact, threshold)
-      if (d2 <= threshold && (!best || d2 < best.distance)) {
-        best = { display: entry.display, distance: d2 }
-      }
-    }
-  }
-
-  if (best && best.display !== value) {
-    return { corrected: best.display, matched: true }
-  }
-
-  return { corrected: value, matched: false }
+  return correctorPorDefecto(value)
 }
 
 /**

@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
   const { data: comunas, error: comunaError } = await supabase
     .from('comunas')
-    .select('original, normalized')
+    .select('original, normalized, region, habitantes')
     .eq('batch_id', batchId)
 
   if (comunaError) {

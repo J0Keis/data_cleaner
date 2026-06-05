@@ -127,7 +127,7 @@ export default function BuscarComuna({ caseMode }: { caseMode: CaseMode }) {
               onChange={(e) => { setQuery(e.target.value); setAbierto(true); setActiveIdx(0) }}
               onFocus={() => setAbierto(true)}
               onKeyDown={onKeyDown}
-              placeholder='Ej: "florida", "viña", "temuko"…'
+              placeholder='Ej: "florida", "viña", "temuco"…'
               className="w-full rounded-xl border border-teal-100 bg-white py-2.5 pl-9 pr-24 text-sm text-slate-800 focus:border-teal-400 focus:outline-none"
             />
             <button

@@ -219,7 +219,7 @@ function PaginaFamososInner() {
 
                   <div className="p-3 sm:p-6">
                     {tab === 'datos' && <FamososTable batchId={resultado.batchId} famosos={famososData} />}
-                    {tab === 'log'   && <LogFamosos logs={resultado.logs} />}
+                    {tab === 'log'   && <LogFamosos logs={resultado.logs.length ? resultado.logs : derivarLogFamosos(famososData ?? [])} />}
                   </div>
                 </div>
               </>
@@ -254,6 +254,17 @@ function PaginaFamososInner() {
       </main>
     </div>
   )
+}
+
+/** Deriva un log legible desde los famosos ya guardados, para que la pestaña
+ *  "Log de proceso" no quede vacía al cargar un batch del historial (P2). */
+function derivarLogFamosos(famosos: FamosoRaw[]): string[] {
+  return famosos.map((f, i) => {
+    const fecha  = f.fecha_nacimiento ?? f.fecha_aprox ?? f.fecha_original
+    const edad   = f.edad != null ? `${f.edad} años` : 'edad N/D'
+    const cumple = f.es_cumpleanios === 1 ? ' — 🎂 CUMPLEAÑOS HOY' : ''
+    return `Línea ${i + 1}: ${f.nombre} — ${f.fecha_original} → ${fecha} — ${edad}${cumple}`
+  })
 }
 
 function LogFamosos({ logs }: { logs: string[] }) {

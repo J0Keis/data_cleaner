@@ -3,13 +3,19 @@ import { ANCHO_TIPO_LOG, esDuplicadoTipo, tipoCambioEspanol } from '@/app/lib/lo
 import { sortComunas, type SortOrder } from './sorter'
 import type { LogEntry } from './supabase'
 
-type ComunaRow = { original: string; normalized: string }
+type ComunaRow = {
+  original: string
+  normalized: string
+  region?: string | null
+  habitantes?: number | null
+}
 
 export function exportCsv(comunas: ComunaRow[], order: SortOrder): string {
   const sorted = sortComunas(comunas, order)
-  const header = 'original,normalizado'
+  const header = 'original,normalizado,region,habitantes'
+  const esc = (s: string) => s.replace(/"/g, '""')
   const rows = sorted.map(
-    (c) => `"${c.original.replace(/"/g, '""')}","${c.normalized.replace(/"/g, '""')}"`,
+    (c) => `"${esc(c.original)}","${esc(c.normalized)}","${esc(c.region ?? '')}","${c.habitantes ?? ''}"`,
   )
   return [header, ...rows].join('\n')
 }
@@ -22,7 +28,12 @@ export function exportJson(comunas: ComunaRow[], order: SortOrder): string {
 export function exportXlsx(comunas: ComunaRow[], order: SortOrder): Buffer {
   const sorted = sortComunas(comunas, order)
   const ws = XLSX.utils.json_to_sheet(
-    sorted.map((c) => ({ original: c.original, normalizado: c.normalized })),
+    sorted.map((c) => ({
+      original:   c.original,
+      normalizado: c.normalized,
+      region:     c.region ?? '',
+      habitantes: c.habitantes ?? '',
+    })),
   )
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Comunas')
@@ -33,14 +44,15 @@ export function buildSql(comunas: ComunaRow[], order: SortOrder): string {
   const sorted = sortComunas(comunas, order)
   if (sorted.length === 0) return '-- Sin datos'
 
+  const sqlStr = (s: string) => `'${s.replace(/'/g, "''")}'`
   const values = sorted
     .map(
       (c) =>
-        `  ('${c.original.replace(/'/g, "''")}', '${c.normalized.replace(/'/g, "''")}')`,
+        `  (${sqlStr(c.original)}, ${sqlStr(c.normalized)}, ${c.region ? sqlStr(c.region) : 'NULL'}, ${c.habitantes ?? 'NULL'})`,
     )
     .join(',\n')
 
-  return `-- Exportacion data-cleaner\nINSERT INTO comunas (original, normalized) VALUES\n${values};`
+  return `-- Exportacion data-cleaner\nINSERT INTO comunas (original, normalized, region, habitantes) VALUES\n${values};`
 }
 
 export function exportLogTxt(
