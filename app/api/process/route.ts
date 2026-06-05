@@ -4,6 +4,7 @@ import { getDefaultRules } from '@/app/lib/etl-rules'
 import { getUniqueComunas, normalizeLines } from '@/app/lib/normalizer'
 import { parseFileContent } from '@/app/lib/parser'
 import { calculateQualityScore } from '@/app/lib/quality-score'
+import { enriquecerComuna } from '@/app/lib/comunas-enriquecidas'
 import { supabase } from '@/app/lib/supabase'
 
 // Tamaño máximo de cada chunk al insertar en Supabase.
@@ -67,11 +68,21 @@ export async function POST(request: Request) {
     // ── 3. Preparar filas para DB ────────────────────────────────
     const batchId    = randomUUID()
 
-    const comunaRows = unique.map((c) => ({
+    // Enriquecer comunas con región y habitantes desde el dataset INE
+    let noEncontradas = 0
+    const comunasEnriquecidas = unique.map((c) => {
+      const info = enriquecerComuna(c.normalized)
+      if (!info) noEncontradas++
+      return { ...c, region: info?.region ?? null, habitantes: info?.habitantes ?? null }
+    })
+
+    const comunaRows = comunasEnriquecidas.map((c) => ({
       id:         randomUUID(),
       batch_id:   batchId,
       original:   c.original,
       normalized: c.normalized,
+      region:     c.region,
+      habitantes: c.habitantes,
     }))
 
     const logRows = normalized
@@ -118,14 +129,15 @@ export async function POST(request: Request) {
     // ── 5. Respuesta ─────────────────────────────────────────────
     return NextResponse.json({
       batchId,
-      fileName:     file.name,
-      totalInput:   lines.length,
-      totalOutput:  unique.length,
+      fileName:      file.name,
+      totalInput:    lines.length,
+      totalOutput:   unique.length,
       duplicates,
       changes,
       qualityBefore,
       qualityAfter,
-      comunas: unique,
+      noEncontradas,
+      comunas: comunasEnriquecidas,
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error al procesar'

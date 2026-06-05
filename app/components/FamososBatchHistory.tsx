@@ -27,9 +27,11 @@ export interface FamososResponse {
 interface Props {
   onLoad: (data: FamososResponse) => void
   onDelete?: (id: string) => void
+  refreshKey?: number
+  selectedId?: string
 }
 
-export default function FamososBatchHistory({ onLoad, onDelete }: Props) {
+export default function FamososBatchHistory({ onLoad, onDelete, refreshKey, selectedId }: Props) {
   const [batches, setBatches] = useState<FamosoBatchSummary[]>([])
   const [cargando, setCargando] = useState(true)
   const [eliminandoId, setEliminandoId] = useState<string | null>(null)
@@ -49,7 +51,7 @@ export default function FamososBatchHistory({ onLoad, onDelete }: Props) {
     }
   }
 
-  useEffect(() => { cargarHistorial() }, [])
+  useEffect(() => { cargarHistorial() }, [refreshKey])
 
   async function handleLoad(batch: FamosoBatchSummary) {
     try {

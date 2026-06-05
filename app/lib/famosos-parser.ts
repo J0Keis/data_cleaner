@@ -12,7 +12,7 @@
  * Normaliza fechas al estándar DD-MM-YYYY usando date-parser.ts.
  */
 
-import { parseDate, calcularEdad, esCumpleanos } from './date-parser'
+import { parseDate, calcularEdad, calcularEdadAprox, esCumpleanos } from './date-parser'
 import { normalizeForKey } from './normalizer'
 
 export interface FamosoRecord {
@@ -73,7 +73,7 @@ export function procesarFamosos(content: string): FamososResult {
 
     const [nombre, fechaOriginal] = par
     const parsed = parseDate(fechaOriginal)
-    const edad = calcularEdad(parsed.date)
+    const edad = calcularEdad(parsed.date) ?? calcularEdadAprox(parsed.aprox)
     const cumpleanos = esCumpleanos(parsed.date)
 
     const record: FamosoRecord = {

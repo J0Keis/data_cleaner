@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight, Search, X, Download, FileText, FileJson, Cake, ArrowUpDown, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, X, Download, FileText, FileJson, Cake, ArrowUpDown, Check, Image as ImageIcon, Loader2, ExternalLink } from 'lucide-react'
 
 interface FamosoRow {
   id: string
@@ -11,6 +11,87 @@ interface FamosoRow {
   fecha_aprox: string | null
   edad: number | null
   es_cumpleanios: number
+}
+
+interface ImagenData { url: string | null; fuente: string | null; fecha: string | null; cached: boolean }
+
+function ModalImagen({ famoso, onClose }: { famoso: FamosoRow; onClose: () => void }) {
+  const [datos, setDatos]     = useState<ImagenData | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError]     = useState<string | null>(null)
+
+  useEffect(() => {
+    setCargando(true); setError(null)
+    fetch(`/api/famosos/imagen?nombre=${encodeURIComponent(famoso.nombre)}&id=${famoso.id}`)
+      .then(r => r.json())
+      .then(d => { if (d.error) setError(d.error); else setDatos(d) })
+      .catch(() => setError('Error de red'))
+      .finally(() => setCargando(false))
+  }, [famoso.id, famoso.nombre])
+
+  useEffect(() => {
+    function esc(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', esc)
+    return () => document.removeEventListener('keydown', esc)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm border border-teal-100 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-teal-50">
+          <div>
+            <h2 className="text-base font-semibold text-slate-800">{famoso.nombre}</h2>
+            <p className="text-xs text-slate-400">{famoso.fecha_nacimiento ?? famoso.fecha_aprox ?? famoso.fecha_original}</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:bg-teal-50 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Imagen */}
+        <div className="flex flex-col items-center justify-center p-6 gap-4 min-h-[260px]">
+          {cargando && <Loader2 className="w-10 h-10 text-teal-400 animate-spin" />}
+          {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          {!cargando && !error && datos?.url && (
+            <img
+              src={datos.url}
+              alt={famoso.nombre}
+              className="rounded-xl object-cover max-h-56 w-auto shadow-md"
+            />
+          )}
+          {!cargando && !error && !datos?.url && (
+            <div className="flex flex-col items-center gap-2 text-slate-400">
+              <ImageIcon className="w-12 h-12 opacity-30" />
+              <p className="text-sm">No se encontró imagen en Wikipedia</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer con fuente */}
+        {datos?.fuente && (
+          <div className="px-5 py-3 border-t border-teal-50 bg-teal-50/40 space-y-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Fuente</p>
+            <a
+              href={`https://en.wikipedia.org/wiki/${encodeURIComponent(famoso.nombre)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1 text-xs text-teal-600 hover:underline"
+            >
+              <ExternalLink className="w-3 h-3" />
+              Wikipedia — {famoso.nombre}
+            </a>
+            <p className="text-[10px] text-slate-400">
+              Capturada: {datos.fecha}
+              {datos.cached && ' · desde caché'}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 interface FamososTableProps {
@@ -50,6 +131,7 @@ export default function FamososTable({ batchId, famosos: famososProp }: FamososT
 
   const famosos: FamosoRow[] = famososProp !== undefined && famososProp !== null ? famososProp : famososLocales
   const cargando = famososProp === null || cargandoInterno
+  const [famosoImagen, setFamosoImagen] = useState<FamosoRow | null>(null)
 
   useEffect(() => { setPage(1) }, [busqueda, soloCumpleanos])
 
@@ -153,12 +235,13 @@ export default function FamososTable({ batchId, famosos: famososProp }: FamososT
               <th className="px-4 py-3 text-center w-12" aria-label="Cumpleaños hoy">
                 <Cake className="w-3.5 h-3.5 inline text-rose-400" />
               </th>
+              <th className="px-4 py-3 text-center w-20">Imagen</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-teal-50">
             {slice.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-10 text-slate-400">Sin resultados para esta búsqueda</td>
+                <td colSpan={7} className="text-center py-10 text-slate-400">Sin resultados para esta búsqueda</td>
               </tr>
             ) : (
               slice.map((f, i) => (
@@ -174,6 +257,15 @@ export default function FamososTable({ batchId, famosos: famososProp }: FamososT
                   <td className="px-4 py-3 text-slate-600">{f.edad != null ? f.edad : '—'}</td>
                   <td className="px-4 py-3 text-center">
                     {f.es_cumpleanios === 1 && <Cake className="w-4 h-4 text-rose-500 mx-auto" />}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => setFamosoImagen(f)}
+                      className="flex items-center gap-1 mx-auto text-xs text-teal-600 hover:text-teal-800 border border-teal-200 hover:border-teal-400 px-2 py-1 rounded-lg transition-colors"
+                    >
+                      <ImageIcon className="w-3 h-3" />
+                      Ver
+                    </button>
                   </td>
                 </tr>
               ))
@@ -193,6 +285,11 @@ export default function FamososTable({ batchId, famosos: famososProp }: FamososT
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+      )}
+
+      {/* Modal imagen Wikipedia */}
+      {famosoImagen && (
+        <ModalImagen famoso={famosoImagen} onClose={() => setFamosoImagen(null)} />
       )}
 
       {/* Modal exportación */}

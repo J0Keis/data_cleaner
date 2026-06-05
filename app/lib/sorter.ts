@@ -32,15 +32,12 @@ export const SORT_OPTIONS: { value: SortOrder; label: string; description: strin
 // Usa localeCompare en español para respetar la ñ y tildes.
 // Retorna un nuevo arreglo sin mutar el original.
 // ==========================================
-export function sortComunas(
-  comunas: { original: string; normalized: string }[],
+export function sortComunas<T extends { original: string; normalized: string }>(
+  comunas: T[],
   order: SortOrder,
-): { original: string; normalized: string }[] {
-  // Si no se pide orden, devolvemos tal cual
+): T[] {
   if (order === 'none') return comunas
-
   return [...comunas].sort((a, b) => {
-    // localeCompare con 'es' y sensitivity 'base' ignora tildes al comparar
     const cmp = a.normalized.localeCompare(b.normalized, 'es', { sensitivity: 'base' })
     return order === 'asc' ? cmp : -cmp
   })

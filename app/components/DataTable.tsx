@@ -7,7 +7,7 @@ import SortSelector from '@/app/components/SortSelector'
 import ColumnSelector from '@/app/components/ColumnSelector'
 import { Download, X, FileText, FileJson, Sheet, Database, ScrollText, ArrowDownUp } from 'lucide-react'
 
-type Comuna = { original: string; normalized: string }
+type Comuna = { original: string; normalized: string; region?: string | null; habitantes?: number | null }
 
 type Props = {
   comunas: Comuna[]
@@ -131,6 +131,8 @@ export default function DataTable({ comunas, batchId }: Props) {
                 {showNormalized && (
                   <th className="px-4 py-2 text-left text-xs font-medium text-slate-500">Normalizado</th>
                 )}
+                <th className="px-4 py-2 text-left text-xs font-medium text-slate-500">Región</th>
+                <th className="px-4 py-2 text-left text-xs font-medium text-slate-500">Habitantes</th>
               </tr>
             </thead>
             <tbody>
@@ -143,6 +145,10 @@ export default function DataTable({ comunas, batchId }: Props) {
                   {showNormalized && (
                     <td className="px-4 py-2 font-mono text-sm font-semibold text-slate-900">{c.normalized}</td>
                   )}
+                  <td className="px-4 py-2 text-xs text-slate-500">{c.region ?? <span className="italic text-slate-300">—</span>}</td>
+                  <td className="px-4 py-2 text-xs text-slate-500 tabular-nums">
+                    {c.habitantes != null ? c.habitantes.toLocaleString('es-CL') : <span className="italic text-slate-300">—</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>

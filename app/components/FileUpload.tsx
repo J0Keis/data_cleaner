@@ -14,7 +14,7 @@ export type ProcessResult = {
   changes: number
   qualityBefore: number
   qualityAfter: number
-  comunas: { original: string; normalized: string }[]
+  comunas: { original: string; normalized: string; region?: string | null; habitantes?: number | null }[]
 }
 
 type Props = {
@@ -31,6 +31,12 @@ export default function FileUpload({ rules, onProcessed, compact = false }: Prop
     async (files: File[]) => {
       const file = files[0]
       if (!file) return
+
+      const ext = file.name.toLowerCase()
+      if (!ext.endsWith('.txt') && !ext.endsWith('.csv') && !ext.endsWith('.tsv')) {
+        toast.error('Solo se aceptan archivos .txt, .csv o .tsv')
+        return
+      }
 
       setLoading(true)
       const toastId = toast.loading(`Procesando ${file.name}…`)
@@ -58,11 +64,6 @@ export default function FileUpload({ rules, onProcessed, compact = false }: Prop
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'text/plain': ['.txt'],
-      'text/csv': ['.csv'],
-      'text/tab-separated-values': ['.tsv'],
-    },
     maxFiles: 1,
     disabled: loading,
   })

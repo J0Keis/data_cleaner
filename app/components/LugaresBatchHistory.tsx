@@ -25,9 +25,10 @@ export interface LugaresResponse {
 interface Props {
   onLoad: (data: LugaresResponse) => void
   onDelete?: (id: string) => void
+  refreshKey?: number
 }
 
-export default function LugaresBatchHistory({ onLoad, onDelete }: Props) {
+export default function LugaresBatchHistory({ onLoad, onDelete, refreshKey }: Props) {
   const [batches, setBatches] = useState<LugarBatchSummary[]>([])
   const [cargando, setCargando] = useState(true)
   const [eliminandoId, setEliminandoId] = useState<string | null>(null)
@@ -47,7 +48,7 @@ export default function LugaresBatchHistory({ onLoad, onDelete }: Props) {
     }
   }
 
-  useEffect(() => { cargarHistorial() }, [])
+  useEffect(() => { cargarHistorial() }, [refreshKey])
 
   function handleLoad(batch: LugarBatchSummary) {
     onLoad({

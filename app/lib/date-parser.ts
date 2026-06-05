@@ -151,6 +151,33 @@ export function calcularEdad(date: Date | null): number | null {
   return edad < 0 ? null : edad
 }
 
+/**
+ * Estima la edad para fechas a.C. o aproximadas donde no hay Date exacto.
+ * Trata el nacimiento como 01-01 del año extraído.
+ * Para a.C.: edad = añoBC + añoActual - 1  (no existe año 0)
+ * Para aprox. d.C.: edad = añoActual - año
+ */
+export function calcularEdadAprox(aprox: string | null): number | null {
+  if (!aprox) return null
+  const anioActual = new Date().getFullYear()
+
+  // Fecha a.C.: "aprox. 69 a.C.", "aprox. 100 a.C.", "aprox. 356 a.C."
+  const acMatch = aprox.match(/(\d+)\s*a\.?[Cc]\.?/)
+  if (acMatch) {
+    const anioBC = parseInt(acMatch[1])
+    return anioBC + anioActual - 1
+  }
+
+  // Fecha aproximada d.C.: "aprox. 1162", "1162", "aprox. 800"
+  const anioMatch = aprox.match(/(\d{3,4})/)
+  if (anioMatch) {
+    const anio = parseInt(anioMatch[1])
+    if (anio > 0 && anio <= anioActual) return anioActual - anio
+  }
+
+  return null
+}
+
 export function esCumpleanos(date: Date | null): boolean {
   if (!date) return false
   const hoy = new Date()
